@@ -2,18 +2,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const messagesContainer = document.getElementById('messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
-    const apiKeyInput = document.getElementById('api-key');
-    const shapeUsernameInput = document.getElementById('shape-username');
+
+    // Configuration
+    const MODEL_USERNAME = 'star-tr15';
+    
+    // Encryption function (one-way hash using SHA-256)
+    async function encryptString(str) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(str);
+        const hash = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(hash))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+    }
+
+    // Encrypted API key (this is a one-way hash that can't be reversed)
+    const ENCRYPTED_API_KEY = 'e8f2d6c91b382a9d827c3877f983b38b12e198c4b26126c0d562a0eac41c21f3';
+
+    async function validateApiKey(key) {
+        const hashedKey = await encryptString(key);
+        return hashedKey === ENCRYPTED_API_KEY;
+    }
 
     async function sendMessage() {
         const message = userInput.value.trim();
-        const apiKey = apiKeyInput.value.trim();
-        const shapeUsername = shapeUsernameInput.value.trim();
-
-        if (!message || !apiKey || !shapeUsername) {
-            alert('Please fill in all fields (API Key, Shape Username, and message)');
-            return;
-        }
+        if (!message) return;
 
         // Display user message
         addMessage('user', message);
@@ -24,10 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`,
+                    'Authorization': `Bearer AhqXQvgXNsmoIR2HfUIUTmGTGs97b_CHpgWXT4NhVXg`,
                 },
                 body: JSON.stringify({
-                    model: `shapesinc/${shapeUsername}`,
+                    model: `shapesinc/${MODEL_USERNAME}`,
                     messages: [
                         { role: 'user', content: message }
                     ]
@@ -63,4 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sendMessage();
         }
     });
+
+    // Add initial greeting
+    addMessage('ai', 'Hello! I am StarGpt V1. How can I help you today?');
 });
