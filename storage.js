@@ -6,7 +6,6 @@ class MessageStorage {
     saveMessages(messages) {
         try {
             localStorage.setItem(this.storageKey, JSON.stringify(messages));
-            this.updateLastSync();
         } catch (error) {
             console.error('Error saving messages:', error);
         }
@@ -20,11 +19,5 @@ class MessageStorage {
             console.error('Error loading messages:', error);
             return [];
         }
-    }
-
-    updateLastSync() {
-        const now = new Date();
-        document.getElementById('last-sync').textContent = 
-            now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
     }
 }
