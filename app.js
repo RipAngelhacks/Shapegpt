@@ -1,22 +1,21 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Validate API key before proceeding
+    if (!await validateApiKey()) {
+        console.error('Invalid API key');
+        document.body.innerHTML = '<div class="error-message">Authentication Error: Invalid API key</div>';
+        return;
+    }
+
     const messagesContainer = document.getElementById('messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
     const typingIndicator = document.getElementById('typing-indicator');
 
-    // Configuration
-    const MODEL_USERNAME = 'star-tr15';
-    const USER_ID = 'RipAngelhacks';
-    const CHANNEL_ID = `web_${Date.now()}`;
-    const SHAPES_API_KEY = process.env.SHAPES_API_KEY;
-
-    // Initialize storage and rate limiting
     const storage = new MessageStorage();
-    const rateLimit = new RateLimit(5, 60000); // 5 requests per minute
+    const rateLimit = new RateLimit(5, 60000);
 
-    // Load saved messages
     const savedMessages = storage.loadMessages();
-    savedMessages.forEach(msg => addMessage(msg.role, msg.content, msg.timestamp, msg.status));
+    savedMessages.forEach(msg => addMessage(msg.role, msg.content, msg.status));
 
     let messageQueue = [];
     let isProcessing = false;
@@ -42,12 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SHAPES_API_KEY}`,
-                        'X-User-Id': USER_ID,
-                        'X-Channel-Id': CHANNEL_ID
+                        'Authorization': `Bearer ${CONFIG.API_KEY}`,
+                        'X-User-Id': CONFIG.USER_ID,
+                        'X-Channel-Id': CONFIG.CHANNEL_ID
                     },
                     body: JSON.stringify({
-                        model: `shapesinc/${MODEL_USERNAME}`,
+                        model: `shapesinc/${CONFIG.MODEL_USERNAME}`,
                         messages: [{ role: 'user', content: message }]
                     })
                 });
@@ -121,14 +120,14 @@ document.addEventListener('DOMContentLoaded', () => {
         statusElement.textContent = status;
     }
 
-    function addMessage(role, content, timestamp = new Date(), status = 'Sending...') {
+    function addMessage(role, content, status = 'Sending...') {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', `${role}-message`);
         messageDiv.dataset.message = content;
         
         const timestampDiv = document.createElement('div');
         timestampDiv.classList.add('message-timestamp');
-        timestampDiv.textContent = formatTimestamp(timestamp);
+        timestampDiv.textContent = CONFIG.STATIC_TIMESTAMP;
         
         const contentDiv = document.createElement('div');
         contentDiv.textContent = content;
@@ -145,14 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save messages to local storage
         const messages = storage.loadMessages();
-        messages.push({ role, content, timestamp, status });
+        messages.push({ role, content, status });
         storage.saveMessages(messages);
 
         return messageDiv;
-    }
-
-    function formatTimestamp(date) {
-        return new Date(date).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
     }
 
     async function sendMessage() {
@@ -183,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Connection lost');
     });
 
-    // Add initial greeting
+    // Add initial greeting if no saved messages
     if (savedMessages.length === 0) {
         addMessage('ai', 'Hello! I am StarGpt V1. How can I help you today?');
     }
